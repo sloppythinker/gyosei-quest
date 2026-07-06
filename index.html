@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3b4a8c">
+<title>行書クエスト</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header id="header">
+  <div class="header-title">行書クエスト</div>
+  <div class="countdown" id="countdown"></div>
+</header>
+
+<main id="main">
+
+  <!-- ホーム -->
+  <section id="screen-home" class="screen active">
+    <div class="card norma-card">
+      <div class="card-title">今日のノルマ</div>
+      <div class="norma-row">
+        <div class="norma-item">
+          <span class="norma-num" id="norma-review">0</span>
+          <span class="norma-label">復習</span>
+        </div>
+        <div class="norma-item">
+          <span class="norma-num" id="norma-new">0</span>
+          <span class="norma-label">新規</span>
+        </div>
+        <div class="norma-item">
+          <span class="norma-num" id="norma-done">0</span>
+          <span class="norma-label">本日回答</span>
+        </div>
+        <div class="norma-item">
+          <span class="norma-num" id="streak">0</span>
+          <span class="norma-label">連続日数</span>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="norma-progress"></div></div>
+      <div class="norma-status" id="norma-status"></div>
+    </div>
+
+    <button class="big-btn primary" id="btn-start-today">今日の学習を始める</button>
+    <button class="big-btn" id="btn-weak">弱点だけ復習する</button>
+
+    <div class="card">
+      <div class="card-title">科目別に演習</div>
+      <div id="subject-buttons" class="subject-grid"></div>
+    </div>
+  </section>
+
+  <!-- 演習 -->
+  <section id="screen-quiz" class="screen">
+    <div class="quiz-header">
+      <button class="icon-btn" id="btn-quit">✕</button>
+      <div class="quiz-progress" id="quiz-progress"></div>
+      <div class="quiz-topic" id="quiz-topic"></div>
+    </div>
+    <div class="card question-card">
+      <div class="question-text" id="question-text"></div>
+    </div>
+    <div id="answer-area"></div>
+    <div class="card explanation-card hidden" id="explanation-card">
+      <div class="verdict" id="verdict"></div>
+      <div class="explanation-text" id="explanation-text"></div>
+      <button class="big-btn primary" id="btn-next">次の問題へ</button>
+    </div>
+  </section>
+
+  <!-- 結果 -->
+  <section id="screen-result" class="screen">
+    <div class="card result-card">
+      <div class="card-title">セッション結果</div>
+      <div class="result-score" id="result-score"></div>
+      <div class="result-detail" id="result-detail"></div>
+      <button class="big-btn primary" id="btn-result-home">ホームに戻る</button>
+      <button class="big-btn" id="btn-retry-wrong">間違えた問題をもう一度</button>
+    </div>
+  </section>
+
+  <!-- 記述カード -->
+  <section id="screen-cards" class="screen">
+    <div id="cards-container"></div>
+  </section>
+
+  <!-- 統計 -->
+  <section id="screen-stats" class="screen">
+    <div class="card">
+      <div class="card-title">科目別の成績</div>
+      <div id="stats-subjects"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">学習ヒートマップ(直近5週)</div>
+      <div id="heatmap" class="heatmap"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">設定</div>
+      <label class="setting-row">1日の新規問題数
+        <select id="setting-new-per-day">
+          <option value="10">10問</option>
+          <option value="20" selected>20問</option>
+          <option value="30">30問</option>
+          <option value="50">50問</option>
+        </select>
+      </label>
+      <div class="setting-label">出題する科目</div>
+      <div id="setting-subjects"></div>
+      <button class="big-btn danger" id="btn-reset">学習データをリセット</button>
+    </div>
+  </section>
+
+</main>
+
+<nav id="tabbar">
+  <button class="tab active" data-screen="screen-home"><span class="tab-icon">🏠</span>ホーム</button>
+  <button class="tab" data-screen="screen-cards"><span class="tab-icon">✏️</span>記述</button>
+  <button class="tab" data-screen="screen-stats"><span class="tab-icon">📊</span>統計</button>
+</nav>
+
+<script src="data/gyoseiho.js"></script>
+<script src="data/minpo.js"></script>
+<script src="data/kenpo.js"></script>
+<script src="data/shoho.js"></script>
+<script src="data/kisochishiki.js"></script>
+<script src="data/kijutsu.js"></script>
+<script src="srs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+"use strict";
+
+const SRS = (() => {
+  const KEY = "gyosei-progress-v1";
+  const INTERVALS = [1, 3, 7, 14, 30, 60];
+
+  let store = load();
+
+  function load() {
+    try {
+      return JSON.parse(localStorage.getItem(KEY)) || { q: {}, days: {}, settings: {} };
+    } catch {
+      return { q: {}, days: {}, settings: {} };
+    }
+  }
+
+  function save() {
+    localStorage.setItem(KEY, JSON.stringify(store));
+  }
+
+  function todayStr(offset = 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  }
+
+  function getState(id) {
+    return store.q[id] || null;
+  }
+
+  function grade(id, correct) {
+    const s = store.q[id] || { lvl: -1, due: todayStr(), c: 0, w: 0 };
+    if (correct) {
+      s.c++;
+      s.lvl = Math.min(s.lvl + 1, INTERVALS.length - 1);
+      s.due = todayStr(INTERVALS[s.lvl]);
+    } else {
+      s.w++;
+      s.lvl = -1;
+      s.due = todayStr(1);
+    }
+    s.last = todayStr();
+    store.q[id] = s;
+    store.days[todayStr()] = (store.days[todayStr()] || 0) + 1;
+    save();
+  }
+
+  function dueIds(allIds) {
+    const t = todayStr();
+    return allIds.filter(id => store.q[id] && store.q[id].due <= t);
+  }
+
+  function newIds(allIds) {
+    return allIds.filter(id => !store.q[id]);
+  }
+
+  function weakIds(allIds) {
+    return allIds.filter(id => {
+      const s = store.q[id];
+      if (!s) return false;
+      const total = s.c + s.w;
+      return s.w > 0 && (s.c / total) < 0.6;
+    });
+  }
+
+  function answeredToday() {
+    return store.days[todayStr()] || 0;
+  }
+
+  function streak() {
+    let n = 0;
+    for (let i = 0; ; i++) {
+      const d = todayStr(-i);
+      if (store.days[d]) n++;
+      else if (i === 0) continue; // 今日未学習でも連続は昨日から数える
+      else break;
+    }
+    return n;
+  }
+
+  function dayCount(dateStr) {
+    return store.days[dateStr] || 0;
+  }
+
+  function subjectStats(questions) {
+    const stats = {};
+    for (const q of questions) {
+      if (!stats[q.subject]) stats[q.subject] = { c: 0, w: 0, seen: 0, total: 0 };
+      stats[q.subject].total++;
+      const s = store.q[q.id];
+      if (s) {
+        stats[q.subject].seen++;
+        stats[q.subject].c += s.c;
+        stats[q.subject].w += s.w;
+      }
+    }
+    return stats;
+  }
+
+  function getSetting(key, fallback) {
+    return store.settings[key] !== undefined ? store.settings[key] : fallback;
+  }
+
+  function setSetting(key, value) {
+    store.settings[key] = value;
+    save();
+  }
+
+  function reset() {
+    store = { q: {}, days: {}, settings: store.settings };
+    save();
+  }
+
+  return { grade, getState, dueIds, newIds, weakIds, answeredToday, streak, dayCount, subjectStats, getSetting, setSetting, reset, todayStr };
+})();
