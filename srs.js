@@ -12,7 +12,7 @@ const SRS = (() => {
       s = JSON.parse(localStorage.getItem(KEY));
     } catch { /* 破損時は初期化 */ }
     s = s || {};
-    return { q: s.q || {}, days: s.days || {}, settings: s.settings || {}, mocks: s.mocks || [] };
+    return { q: s.q || {}, days: s.days || {}, settings: s.settings || {}, mocks: s.mocks || [], marks: s.marks || {} };
   }
 
   function save() {
@@ -119,6 +119,21 @@ const SRS = (() => {
     return store.mocks;
   }
 
+  function toggleMark(id) {
+    if (store.marks[id]) delete store.marks[id];
+    else store.marks[id] = 1;
+    save();
+    return !!store.marks[id];
+  }
+
+  function isMarked(id) {
+    return !!store.marks[id];
+  }
+
+  function markedIds() {
+    return Object.keys(store.marks);
+  }
+
   function exportData() {
     return JSON.stringify(store);
   }
@@ -127,7 +142,7 @@ const SRS = (() => {
     try {
       const s = JSON.parse(json);
       if (!s || typeof s.q !== "object" || typeof s.days !== "object") return false;
-      store = { q: s.q, days: s.days, settings: s.settings || {}, mocks: s.mocks || [] };
+      store = { q: s.q, days: s.days, settings: s.settings || {}, mocks: s.mocks || [], marks: s.marks || {} };
       save();
       return true;
     } catch {
@@ -136,9 +151,9 @@ const SRS = (() => {
   }
 
   function reset() {
-    store = { q: {}, days: {}, settings: store.settings, mocks: [] };
+    store = { q: {}, days: {}, settings: store.settings, mocks: [], marks: {} };
     save();
   }
 
-  return { grade, getState, dueIds, newIds, weakIds, answeredToday, streak, dayCount, subjectStats, getSetting, setSetting, addMock, mocks, exportData, importData, reset, todayStr };
+  return { grade, getState, dueIds, newIds, weakIds, answeredToday, streak, dayCount, subjectStats, getSetting, setSetting, addMock, mocks, toggleMark, isMarked, markedIds, exportData, importData, reset, todayStr };
 })();

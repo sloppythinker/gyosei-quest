@@ -48,10 +48,45 @@ function newPerDay() {
   return SRS.getSetting("newPerDay", 20);
 }
 
+/* ---------- 学習ペースナビ ---------- */
+const STUDY_START = new Date(2026, 6, 6); // 2026-07-06
+const PHASES = [
+  [new Date(2026, 7, 23), "① インプット期", "テキスト通読+「今日の学習」で即日復習"],
+  [new Date(2026, 9, 3), "② アウトプット期", "過去問集2周+弱点単元の集中演習"],
+  [new Date(2026, 9, 31), "③ 記述・弱点期", "記述式を毎日書く+フル模試で実力測定"],
+  [new Date(2026, 10, 8), "④ 直前期", "弱点・ブックマークだけ回す+フル模試"],
+];
+
+function renderPace() {
+  const now = new Date().setHours(0, 0, 0, 0);
+  const box = $("pace-info");
+  if (now >= EXAM_DATE.getTime()) {
+    box.innerHTML = `<div class="norma-status">試験日を迎えました。今日は実力を出し切るだけです!</div>`;
+    return;
+  }
+  const phase = PHASES.find(p => now <= p[0].getTime());
+  const phaseRest = Math.ceil((phase[0] - now) / 86400000);
+  const elapsedPct = Math.round((now - STUDY_START) / (EXAM_DATE - STUDY_START) * 100);
+  const seen = ALL_QUESTIONS.filter(q => SRS.getState(q.id)).length;
+  const seenPct = Math.round(seen / ALL_QUESTIONS.length * 100);
+  const diff = seenPct - elapsedPct;
+  const status = diff >= -10 ? ["🟢 順調なペースです", "var(--correct)"]
+    : diff >= -25 ? ["🟡 やや遅れ気味。新規問題数を増やしましょう", "var(--primary)"]
+    : ["🔴 遅れています。1日の学習量を見直しましょう", "var(--wrong)"];
+  box.innerHTML = `
+    <div class="pace-phase">${phase[1]}<small>(残り${phaseRest}日)</small></div>
+    <div class="pace-todo">${phase[2]}</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${seenPct}%; background:${status[1]}"></div></div>
+    <div class="norma-status">全問1周: ${seenPct}%(${seen}/${ALL_QUESTIONS.length}問) / 期間経過: ${elapsedPct}% — ${status[0]}</div>`;
+}
+
 /* ---------- ホーム ---------- */
 function renderHome() {
   const days = Math.max(0, Math.ceil((EXAM_DATE - new Date().setHours(0, 0, 0, 0)) / 86400000));
   $("countdown").innerHTML = `試験まで <strong>${days}</strong> 日`;
+  renderPace();
+  const marked = SRS.markedIds().length;
+  $("btn-marked").textContent = `ブックマークを復習する${marked ? ` (${marked}問)` : ""}`;
 
   const ids = enabledQuestions().map(q => q.id);
   const due = SRS.dueIds(ids).length;
@@ -161,7 +196,7 @@ function startTashi() {
   const due = SRS.dueIds(ids);
   const fresh = shuffle(SRS.newIds(ids));
   const pool = [...due, ...fresh].slice(0, 8);
-  startSession(pool.length ? pool : shuffle(ids).slice(0, 8), "多肢選択式", { kind: "tashi" });
+  startSession(pool.length ? pool : shuffle(ids).slice(0, 8), "多肢選択式");
 }
 
 function startKijutsu() {
@@ -169,7 +204,16 @@ function startKijutsu() {
   const due = SRS.dueIds(ids);
   const fresh = shuffle(SRS.newIds(ids));
   const pool = [...due, ...fresh].slice(0, 5);
-  startSession(pool.length ? pool : shuffle(ids).slice(0, 5), "記述式演習", { kind: "kijutsu" });
+  startSession(pool.length ? pool : shuffle(ids).slice(0, 5), "記述式演習");
+}
+
+function startMarked() {
+  const ids = SRS.markedIds();
+  if (ids.length === 0) {
+    alert("ブックマークした問題がありません。\n解説画面の「🔖 ブックマークに追加」で登録できます。");
+    return;
+  }
+  startSession(ids, "ブックマーク復習");
 }
 
 // 基礎知識は文章理解2問を保証(本試験の足切り対策と同じ構成比)
@@ -184,6 +228,27 @@ function startMock() {
   }
   if (!confirm(`本試験形式の五肢択一 ${ids.length}問を通しで解きます(1問3分・計${ids.length * 3}分)。途中で解説は表示されません。開始しますか?`)) return;
   startSession(ids, "模試", { kind: "mock", minutes: ids.length * 3, noShuffle: true });
+}
+
+// フル模試: 法令択一40+多肢3+記述3+基礎知識14 = 60問・300点満点(本試験と同構成)
+const FULL_MOCK_PLAN = [["行政法", 20], ["民法", 10], ["憲法", 5], ["商法・会社法", 5]];
+
+function startFullMock() {
+  const pick = (arr, n) => shuffle(arr).slice(0, n);
+  const items = [];
+  for (const [sub, n] of FULL_MOCK_PLAN)
+    items.push(...pick(ALL_QUESTIONS.filter(q => q.type === "choice5" && q.subject === sub), n));
+  items.push(...pick(TASHI_QUESTIONS.filter(q => q.subject === "行政法"), 2));
+  items.push(...pick(TASHI_QUESTIONS.filter(q => q.subject === "憲法"), 1));
+  items.push(...pick(KIJUTSU_CARDS.filter(c => c.subject === "行政法"), 1));
+  items.push(...pick(KIJUTSU_CARDS.filter(c => c.subject === "民法"), 2));
+  const kisoPool = ALL_QUESTIONS.filter(q => q.subject === "基礎知識" && q.topic !== "文章理解");
+  const kisoC5 = pick(kisoPool.filter(q => q.type === "choice5"), 11);
+  items.push(...kisoC5, ...pick(kisoPool.filter(q => q.type === "ox"), 11 - kisoC5.length));
+  items.push(...pick(ALL_QUESTIONS.filter(q => q.topic === "文章理解"), 3));
+  if (!confirm("本試験形式のフル模試です。\n択一54問+多肢選択3問+記述3問=300点満点・制限時間180分。\n途中で解説は表示されず、最後に得点と足切り判定が出ます。開始しますか?")) return;
+  startSession(items.map(x => x.id), "フル模試", { kind: "fullmock", minutes: 180, noShuffle: true });
+  session.score = { horei: 0, kiso: 0 };
 }
 
 function startWeakTopics() {
@@ -221,16 +286,17 @@ function renderQuestion() {
   $("quiz-topic").textContent = `${q.subject}・${q.topic}`;
   $("explanation-card").classList.add("hidden");
 
-  if (session.kind === "tashi") {
+  if (TASHI_BY_ID[id]) {
     renderTashi(q);
     return;
   }
-  if (session.kind === "kijutsu") {
+  if (KIJUTSU_BY_ID[id]) {
     renderKijutsu(q);
     return;
   }
   $("question-text").textContent = q.question;
 
+  const isMockKind = session.kind === "mock" || session.kind === "fullmock";
   const area = $("answer-area");
   area.innerHTML = "";
   if (q.type === "ox") {
@@ -240,26 +306,31 @@ function renderQuestion() {
       const b = document.createElement("button");
       b.className = "ox-btn " + (val ? "maru" : "batsu");
       b.textContent = label;
-      b.addEventListener("click", () => answer(q, val === q.answer));
+      b.addEventListener("click", () => {
+        if (isMockKind) answerMock(q, val === q.answer);
+        else answer(q, val === q.answer);
+      });
       row.appendChild(b);
     }
     area.appendChild(row);
   } else {
-    q.choices.forEach((c, i) => {
+    // 表示順をシャッフル(位置で答えを覚えるのを防ぐ)。番号ラベルは元のまま=解説と整合
+    shuffle(q.choices.map((_, i) => i)).forEach(ci => {
       const b = document.createElement("button");
       b.className = "choice-btn";
-      b.innerHTML = `<span class="choice-no">${i + 1}</span>${escapeHtml(c)}`;
+      b.dataset.ci = ci;
+      b.innerHTML = `<span class="choice-no">${ci + 1}</span>${escapeHtml(q.choices[ci])}`;
       b.addEventListener("click", () => {
-        if (session.kind === "mock") {
-          answerMock(q, i === q.answer);
+        if (isMockKind) {
+          answerMock(q, ci === q.answer);
           return;
         }
-        area.querySelectorAll(".choice-btn").forEach((x, xi) => {
+        area.querySelectorAll(".choice-btn").forEach(x => {
           x.disabled = true;
-          if (xi === q.answer) x.classList.add("correct");
-          else if (xi === i) x.classList.add("wrong");
+          if (Number(x.dataset.ci) === q.answer) x.classList.add("correct");
+          else if (x === b) x.classList.add("wrong");
         });
-        answer(q, i === q.answer, true);
+        answer(q, ci === q.answer, true);
       });
       area.appendChild(b);
     });
@@ -270,6 +341,8 @@ function answerMock(q, correct) {
   SRS.grade(q.id, correct);
   if (correct) session.correct++;
   else session.wrongIds.push(q.id);
+  if (session.kind === "fullmock" && correct)
+    session.score[q.subject === "基礎知識" ? "kiso" : "horei"] += 4;
   session.idx++;
   if (session.idx >= session.ids.length) showResult();
   else renderQuestion();
@@ -336,10 +409,18 @@ function renderTashi(q) {
     SRS.grade(q.id, correct);
     if (correct) session.correct++;
     else session.wrongIds.push(q.id);
+    if (session.kind === "fullmock") {
+      session.score.horei += hit * 2; // 多肢選択は1空欄2点
+      session.idx++;
+      if (session.idx >= session.ids.length) showResult();
+      else renderQuestion();
+      return;
+    }
     const v = $("verdict");
     v.textContent = `${hit} / 4 正解${correct ? "!" : ""}`;
     v.className = "verdict " + (correct ? "ok" : "ng");
     $("explanation-text").textContent = q.explanation;
+    refreshMarkBtn();
     $("explanation-card").classList.remove("hidden");
     $("btn-next").textContent = session.idx + 1 >= session.ids.length ? "結果を見る" : "次の問題へ";
     $("explanation-card").scrollIntoView({ behavior: "smooth", block: "end" });
@@ -381,12 +462,20 @@ function renderKijutsu(q) {
     SRS.grade(q.id, correct);
     if (correct) session.correct++;
     else session.wrongIds.push(q.id);
+    if (session.kind === "fullmock") {
+      session.score.horei += Math.round(hit / groups.length * 20); // 記述は1問20点
+      session.idx++;
+      if (session.idx >= session.ids.length) showResult();
+      else renderQuestion();
+      return;
+    }
     ta.disabled = true;
     btn.disabled = true;
     const v = $("verdict");
     v.textContent = `キーワード ${hit} / ${groups.length}${correct ? " 合格!" : ""}`;
     v.className = "verdict " + (correct ? "ok" : "ng");
     $("explanation-text").textContent = `【採点キーワード】\n${lines.join("\n")}\n\n${q.answer}`;
+    refreshMarkBtn();
     $("explanation-card").classList.remove("hidden");
     $("btn-next").textContent = session.idx + 1 >= session.ids.length ? "結果を見る" : "次の問題へ";
     $("explanation-card").scrollIntoView({ behavior: "smooth", block: "end" });
@@ -416,10 +505,22 @@ function answer(q, correct, keepChoices = false) {
   if (q.type === "ox") exp = `正解は「${q.answer ? "○" : "✕"}」\n${exp}`;
   else exp = `正解は「${q.answer + 1}」\n${exp}`;
   $("explanation-text").textContent = exp;
+  refreshMarkBtn();
   $("explanation-card").classList.remove("hidden");
   $("btn-next").textContent = session.idx + 1 >= session.ids.length ? "結果を見る" : "次の問題へ";
   $("explanation-card").scrollIntoView({ behavior: "smooth", block: "end" });
 }
+
+/* ---------- ブックマーク ---------- */
+function refreshMarkBtn() {
+  const id = session.ids[session.idx];
+  $("btn-mark").textContent = SRS.isMarked(id) ? "✅ ブックマーク済み(タップで解除)" : "🔖 ブックマークに追加";
+}
+
+$("btn-mark").addEventListener("click", () => {
+  SRS.toggleMark(session.ids[session.idx]);
+  refreshMarkBtn();
+});
 
 $("btn-next").addEventListener("click", () => {
   session.idx++;
@@ -440,7 +541,21 @@ function showResult() {
   $("quiz-timer").classList.add("hidden");
   const total = session.ids.length;
   const pct = Math.round(session.correct / total * 100);
-  if (session.kind === "mock") {
+  if (session.kind === "fullmock") {
+    const sc = session.score;
+    const sum = sc.horei + sc.kiso;
+    const okHorei = sc.horei >= 122;
+    const okKiso = sc.kiso >= 24;
+    const pass = sum >= 180 && okHorei && okKiso;
+    $("result-score").textContent = `${sum} / 300点`;
+    $("result-detail").textContent =
+      `法令等: ${sc.horei} / 244点(足切り122点 ${okHorei ? "クリア○" : "未達✕"})\n` +
+      `基礎知識: ${sc.kiso} / 56点(足切り24点 ${okKiso ? "クリア○" : "未達✕"})\n` +
+      `判定: ${pass ? "🎉 合格圏です!" :
+        !okHorei || !okKiso ? "足切りが未達です。該当分野を強化しましょう" :
+        `合格ライン180点まであと${180 - sum}点`}`;
+    SRS.addMock({ d: SRS.todayStr(), s: sum, t: 300 });
+  } else if (session.kind === "mock") {
     $("result-score").textContent = `${session.correct * 4}点`;
     $("result-detail").textContent = `模試(五肢択一${total}問・${total * 4}点満点): ${session.correct}問正解 (${pct}%)\n本試験の択一は6割前後の正答が合格ライン`;
     SRS.addMock({ d: SRS.todayStr(), s: session.correct * 4, t: total * 4 });
@@ -456,6 +571,8 @@ $("btn-result-home").addEventListener("click", () => showScreen("screen-home"));
 $("btn-retry-wrong").addEventListener("click", () => startSession(session.wrongIds, "間違い直し"));
 $("btn-start-today").addEventListener("click", startToday);
 $("btn-weak").addEventListener("click", startWeak);
+$("btn-marked").addEventListener("click", startMarked);
+$("btn-fullmock").addEventListener("click", startFullMock);
 $("btn-tashi").addEventListener("click", startTashi);
 $("btn-kijutsu").addEventListener("click", startKijutsu);
 $("btn-mock").addEventListener("click", startMock);

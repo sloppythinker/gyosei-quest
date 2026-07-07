@@ -161,6 +161,11 @@ body {
 .word-chip:disabled { opacity: 0.35; }
 .tashi-hint { font-size: 12px; color: var(--sub); text-align: center; margin-bottom: 8px; }
 
+/* 学習ペースナビ */
+.pace-phase { font-weight: 800; font-size: 16px; color: var(--primary); margin-bottom: 2px; }
+.pace-phase small { font-weight: 600; font-size: 12px; color: var(--sub); margin-left: 6px; }
+.pace-todo { font-size: 13px; color: var(--sub); margin-bottom: 10px; }
+
 /* 記述式入力 */
 .kijutsu-input {
   width: 100%; min-height: 96px; padding: 12px;
