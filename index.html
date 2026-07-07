@@ -47,6 +47,8 @@
 
     <button class="big-btn primary" id="btn-start-today">今日の学習を始める</button>
     <button class="big-btn" id="btn-weak">弱点だけ復習する</button>
+    <button class="big-btn" id="btn-tashi">多肢選択式を演習する</button>
+    <button class="big-btn" id="btn-mock">模試モード(タイマー付き)</button>
 
     <div class="card">
       <div class="card-title">科目別に演習</div>
@@ -59,6 +61,7 @@
     <div class="quiz-header">
       <button class="icon-btn" id="btn-quit">✕</button>
       <div class="quiz-progress" id="quiz-progress"></div>
+      <div class="quiz-timer hidden" id="quiz-timer"></div>
       <div class="quiz-topic" id="quiz-topic"></div>
     </div>
     <div class="card question-card">
@@ -83,8 +86,12 @@
     </div>
   </section>
 
-  <!-- 記述カード -->
+  <!-- 暗記カード(記述・数字) -->
   <section id="screen-cards" class="screen">
+    <div class="deck-switch">
+      <button class="deck-btn active" data-deck="kijutsu">記述対策</button>
+      <button class="deck-btn" data-deck="suji">数字暗記</button>
+    </div>
     <div id="cards-container"></div>
   </section>
 
@@ -93,6 +100,11 @@
     <div class="card">
       <div class="card-title">科目別の成績</div>
       <div id="stats-subjects"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">単元別の弱点(正答率が低い順)</div>
+      <div id="stats-topics"></div>
+      <button class="big-btn" id="btn-weak-topic">弱点単元を集中演習</button>
     </div>
     <div class="card">
       <div class="card-title">学習ヒートマップ(直近5週)</div>
@@ -123,11 +135,15 @@
 </nav>
 
 <script src="data/gyoseiho.js"></script>
+<script src="data/gyoseiho2.js"></script>
 <script src="data/minpo.js"></script>
+<script src="data/minpo2.js"></script>
 <script src="data/kenpo.js"></script>
 <script src="data/shoho.js"></script>
 <script src="data/kisochishiki.js"></script>
 <script src="data/kijutsu.js"></script>
+<script src="data/tashi.js"></script>
+<script src="data/suji.js"></script>
 <script src="srs.js"></script>
 <script src="app.js"></script>
 </body>
