@@ -161,6 +161,17 @@ body {
 .word-chip:disabled { opacity: 0.35; }
 .tashi-hint { font-size: 12px; color: var(--sub); text-align: center; margin-bottom: 8px; }
 
+/* 記述式入力 */
+.kijutsu-input {
+  width: 100%; min-height: 96px; padding: 12px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--card); color: var(--text);
+  font: inherit; font-size: 15px; resize: vertical;
+}
+.kijutsu-input:disabled { opacity: 0.7; }
+.kijutsu-counter { text-align: right; font-size: 12px; color: var(--sub); margin: 4px 2px 10px; }
+.kijutsu-counter.over { color: var(--wrong); font-weight: 700; }
+
 /* 模試タイマー */
 .quiz-timer {
   font-weight: 800; font-size: 15px; color: var(--primary);

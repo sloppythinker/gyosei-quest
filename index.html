@@ -48,6 +48,7 @@
     <button class="big-btn primary" id="btn-start-today">今日の学習を始める</button>
     <button class="big-btn" id="btn-weak">弱点だけ復習する</button>
     <button class="big-btn" id="btn-tashi">多肢選択式を演習する</button>
+    <button class="big-btn" id="btn-kijutsu">記述式を書いて練習する</button>
     <button class="big-btn" id="btn-mock">模試モード(タイマー付き)</button>
 
     <div class="card">
@@ -107,6 +108,10 @@
       <button class="big-btn" id="btn-weak-topic">弱点単元を集中演習</button>
     </div>
     <div class="card">
+      <div class="card-title">模試の得点推移</div>
+      <div id="stats-mocks"></div>
+    </div>
+    <div class="card">
       <div class="card-title">学習ヒートマップ(直近5週)</div>
       <div id="heatmap" class="heatmap"></div>
     </div>
@@ -122,6 +127,9 @@
       </label>
       <div class="setting-label">出題する科目</div>
       <div id="setting-subjects"></div>
+      <div class="setting-label" style="margin-top:14px">データのバックアップ</div>
+      <button class="big-btn" id="btn-export">進捗をコピーして保存</button>
+      <button class="big-btn" id="btn-import">バックアップから復元</button>
       <button class="big-btn danger" id="btn-reset">学習データをリセット</button>
     </div>
   </section>
@@ -141,6 +149,7 @@
 <script src="data/kenpo.js"></script>
 <script src="data/shoho.js"></script>
 <script src="data/kisochishiki.js"></script>
+<script src="data/bunsho.js"></script>
 <script src="data/kijutsu.js"></script>
 <script src="data/tashi.js"></script>
 <script src="data/suji.js"></script>

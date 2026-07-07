@@ -7,11 +7,12 @@ const SRS = (() => {
   let store = load();
 
   function load() {
+    let s;
     try {
-      return JSON.parse(localStorage.getItem(KEY)) || { q: {}, days: {}, settings: {} };
-    } catch {
-      return { q: {}, days: {}, settings: {} };
-    }
+      s = JSON.parse(localStorage.getItem(KEY));
+    } catch { /* 破損時は初期化 */ }
+    s = s || {};
+    return { q: s.q || {}, days: s.days || {}, settings: s.settings || {}, mocks: s.mocks || [] };
   }
 
   function save() {
@@ -108,10 +109,36 @@ const SRS = (() => {
     save();
   }
 
-  function reset() {
-    store = { q: {}, days: {}, settings: store.settings };
+  function addMock(rec) {
+    store.mocks.push(rec);
+    if (store.mocks.length > 50) store.mocks = store.mocks.slice(-50);
     save();
   }
 
-  return { grade, getState, dueIds, newIds, weakIds, answeredToday, streak, dayCount, subjectStats, getSetting, setSetting, reset, todayStr };
+  function mocks() {
+    return store.mocks;
+  }
+
+  function exportData() {
+    return JSON.stringify(store);
+  }
+
+  function importData(json) {
+    try {
+      const s = JSON.parse(json);
+      if (!s || typeof s.q !== "object" || typeof s.days !== "object") return false;
+      store = { q: s.q, days: s.days, settings: s.settings || {}, mocks: s.mocks || [] };
+      save();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function reset() {
+    store = { q: {}, days: {}, settings: store.settings, mocks: [] };
+    save();
+  }
+
+  return { grade, getState, dueIds, newIds, weakIds, answeredToday, streak, dayCount, subjectStats, getSetting, setSetting, addMock, mocks, exportData, importData, reset, todayStr };
 })();

@@ -11,12 +11,14 @@ const ALL_QUESTIONS = [
   ...(window.QUESTIONS_KENPO || []),
   ...(window.QUESTIONS_SHOHO || []),
   ...(window.QUESTIONS_KISOCHISHIKI || []),
+  ...(window.QUESTIONS_BUNSHO || []),
 ];
 const KIJUTSU_CARDS = window.KIJUTSU_CARDS || [];
 const SUJI_CARDS = window.SUJI_CARDS || [];
 const TASHI_QUESTIONS = window.QUESTIONS_TASHI || [];
 const Q_BY_ID = Object.fromEntries(ALL_QUESTIONS.map(q => [q.id, q]));
 const TASHI_BY_ID = Object.fromEntries(TASHI_QUESTIONS.map(q => [q.id, q]));
+const KIJUTSU_BY_ID = Object.fromEntries(KIJUTSU_CARDS.map(c => [c.id, c]));
 
 const $ = id => document.getElementById(id);
 
@@ -162,12 +164,22 @@ function startTashi() {
   startSession(pool.length ? pool : shuffle(ids).slice(0, 8), "多肢選択式", { kind: "tashi" });
 }
 
-const MOCK_PLAN = [["行政法", 19], ["民法", 9], ["憲法", 5], ["商法・会社法", 5], ["基礎知識", 4]];
+function startKijutsu() {
+  const ids = KIJUTSU_CARDS.map(c => c.id);
+  const due = SRS.dueIds(ids);
+  const fresh = shuffle(SRS.newIds(ids));
+  const pool = [...due, ...fresh].slice(0, 5);
+  startSession(pool.length ? pool : shuffle(ids).slice(0, 5), "記述式演習", { kind: "kijutsu" });
+}
+
+// 基礎知識は文章理解2問を保証(本試験の足切り対策と同じ構成比)
+const MOCK_PLAN = [["行政法", 19], ["民法", 9], ["憲法", 5], ["商法・会社法", 5], ["基礎知識", 2], ["文章理解", 2]];
 
 function startMock() {
   const ids = [];
   for (const [sub, n] of MOCK_PLAN) {
-    const pool = shuffle(ALL_QUESTIONS.filter(q => q.subject === sub && q.type === "choice5"));
+    const pool = shuffle(ALL_QUESTIONS.filter(q => q.type === "choice5" &&
+      (sub === "文章理解" ? q.topic === "文章理解" : q.subject === sub && q.topic !== "文章理解")));
     ids.push(...pool.slice(0, n).map(q => q.id));
   }
   if (!confirm(`本試験形式の五肢択一 ${ids.length}問を通しで解きます(1問3分・計${ids.length * 3}分)。途中で解説は表示されません。開始しますか?`)) return;
@@ -203,13 +215,18 @@ function weakTopics() {
 
 /* ---------- 演習 ---------- */
 function renderQuestion() {
-  const q = Q_BY_ID[session.ids[session.idx]] || TASHI_BY_ID[session.ids[session.idx]];
+  const id = session.ids[session.idx];
+  const q = Q_BY_ID[id] || TASHI_BY_ID[id] || KIJUTSU_BY_ID[id];
   $("quiz-progress").textContent = `${session.idx + 1} / ${session.ids.length}`;
   $("quiz-topic").textContent = `${q.subject}・${q.topic}`;
   $("explanation-card").classList.add("hidden");
 
   if (session.kind === "tashi") {
     renderTashi(q);
+    return;
+  }
+  if (session.kind === "kijutsu") {
+    renderKijutsu(q);
     return;
   }
   $("question-text").textContent = q.question;
@@ -331,6 +348,55 @@ function renderTashi(q) {
   drawAll();
 }
 
+/* ---------- 記述式入力演習 ---------- */
+function renderKijutsu(q) {
+  $("question-text").textContent = q.question;
+  const area = $("answer-area");
+  area.innerHTML = "";
+
+  const ta = document.createElement("textarea");
+  ta.className = "kijutsu-input";
+  ta.placeholder = "40字程度で解答を入力(キーワードで自動採点されます)";
+  const counter = document.createElement("div");
+  counter.className = "kijutsu-counter";
+  counter.textContent = "0字";
+  ta.addEventListener("input", () => {
+    const len = ta.value.replace(/\s/g, "").length;
+    counter.textContent = `${len}字`;
+    counter.classList.toggle("over", len > 50);
+  });
+  const btn = document.createElement("button");
+  btn.className = "big-btn primary";
+  btn.textContent = "採点する";
+  btn.addEventListener("click", () => {
+    const input = ta.value.replace(/\s/g, "");
+    const groups = q.keywords || [];
+    let hit = 0;
+    const lines = groups.map(g => {
+      const ok = g.some(w => input.includes(w));
+      if (ok) hit++;
+      return `${ok ? "○" : "✕"} ${g[0]}`;
+    });
+    const correct = groups.length > 0 && hit / groups.length >= 2 / 3;
+    SRS.grade(q.id, correct);
+    if (correct) session.correct++;
+    else session.wrongIds.push(q.id);
+    ta.disabled = true;
+    btn.disabled = true;
+    const v = $("verdict");
+    v.textContent = `キーワード ${hit} / ${groups.length}${correct ? " 合格!" : ""}`;
+    v.className = "verdict " + (correct ? "ok" : "ng");
+    $("explanation-text").textContent = `【採点キーワード】\n${lines.join("\n")}\n\n${q.answer}`;
+    $("explanation-card").classList.remove("hidden");
+    $("btn-next").textContent = session.idx + 1 >= session.ids.length ? "結果を見る" : "次の問題へ";
+    $("explanation-card").scrollIntoView({ behavior: "smooth", block: "end" });
+  });
+
+  area.appendChild(ta);
+  area.appendChild(counter);
+  area.appendChild(btn);
+}
+
 function escapeHtml(s) {
   const d = document.createElement("div");
   d.textContent = s;
@@ -377,6 +443,7 @@ function showResult() {
   if (session.kind === "mock") {
     $("result-score").textContent = `${session.correct * 4}点`;
     $("result-detail").textContent = `模試(五肢択一${total}問・${total * 4}点満点): ${session.correct}問正解 (${pct}%)\n本試験の択一は6割前後の正答が合格ライン`;
+    SRS.addMock({ d: SRS.todayStr(), s: session.correct * 4, t: total * 4 });
   } else {
     $("result-score").textContent = `${pct}%`;
     $("result-detail").textContent = `${session.label}: ${total}問中 ${session.correct}問正解`;
@@ -390,6 +457,7 @@ $("btn-retry-wrong").addEventListener("click", () => startSession(session.wrongI
 $("btn-start-today").addEventListener("click", startToday);
 $("btn-weak").addEventListener("click", startWeak);
 $("btn-tashi").addEventListener("click", startTashi);
+$("btn-kijutsu").addEventListener("click", startKijutsu);
 $("btn-mock").addEventListener("click", startMock);
 $("btn-weak-topic").addEventListener("click", startWeakTopics);
 
@@ -476,6 +544,25 @@ function renderStats() {
     }
   }
 
+  // 模試の得点推移(直近10回、60%=合格ライン相当で色分け)
+  const mockBox = $("stats-mocks");
+  const mocks = SRS.mocks();
+  if (mocks.length === 0) {
+    mockBox.innerHTML = `<div class="empty-note" style="padding:10px">模試モードを解くと得点の推移が表示されます</div>`;
+  } else {
+    mockBox.innerHTML = "";
+    for (const m of mocks.slice(-10)) {
+      const pct = Math.round(m.s / m.t * 100);
+      mockBox.insertAdjacentHTML("beforeend", `
+        <div class="stat-row">
+          <div class="stat-name" style="width:7em">${m.d.slice(5).replace("-", "/")}</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%; ${pct < 60 ? "background:var(--wrong)" : "background:var(--correct)"}"></div></div>
+          <div class="stat-pct">${m.s}/${m.t}点 (${pct}%)</div>
+        </div>`);
+    }
+    mockBox.insertAdjacentHTML("beforeend", `<div class="norma-status">緑=正答率60%以上(合格ライン相当)</div>`);
+  }
+
   // ヒートマップ(直近35日、週始まりに揃える)
   const heat = $("heatmap");
   heat.innerHTML = "";
@@ -520,6 +607,27 @@ function renderStats() {
 
 $("setting-new-per-day").addEventListener("change", e => {
   SRS.setSetting("newPerDay", Number(e.target.value));
+});
+
+$("btn-export").addEventListener("click", async () => {
+  const data = SRS.exportData();
+  try {
+    await navigator.clipboard.writeText(data);
+    alert("進捗データをクリップボードにコピーしました。\nメモ帳アプリ等に貼り付けて保存してください。");
+  } catch {
+    prompt("コピーに失敗しました。以下を全選択してコピーしてください", data);
+  }
+});
+
+$("btn-import").addEventListener("click", () => {
+  const text = prompt("バックアップしたデータを貼り付けてください\n(現在の進捗は上書きされます)");
+  if (!text) return;
+  if (SRS.importData(text)) {
+    alert("復元しました");
+    renderStats();
+  } else {
+    alert("復元に失敗しました。データの形式が正しくありません。");
+  }
 });
 
 $("btn-reset").addEventListener("click", () => {

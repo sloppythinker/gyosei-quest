@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE = "gyosei-quest-v2";
+const CACHE = "gyosei-quest-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -17,6 +17,7 @@ const ASSETS = [
   "./data/kenpo.js",
   "./data/shoho.js",
   "./data/kisochishiki.js",
+  "./data/bunsho.js",
   "./data/kijutsu.js",
   "./data/tashi.js",
   "./data/suji.js",
