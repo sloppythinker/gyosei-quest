@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE = "gyosei-quest-v5";
+const CACHE = "gyosei-quest-v6";
 const ASSETS = [
   "./",
   "./index.html",

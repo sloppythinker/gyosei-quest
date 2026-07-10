@@ -315,8 +315,9 @@ function renderQuestion() {
     }
     area.appendChild(row);
   } else {
-    // 表示順をシャッフル(位置で答えを覚えるのを防ぐ)。番号ラベルは元のまま=解説と整合
-    shuffle(q.choices.map((_, i) => i)).forEach(ci => {
+    // シャッフルON時は表示順を入替(位置で答えを覚えるのを防ぐ)。番号ラベルは元のまま=解説と整合
+    const order = q.choices.map((_, i) => i);
+    (SRS.getSetting("shuffleChoices", true) ? shuffle(order) : order).forEach(ci => {
       const b = document.createElement("button");
       b.className = "choice-btn";
       b.dataset.ci = ci;
@@ -734,6 +735,7 @@ function renderStats() {
 
   // 設定
   $("setting-new-per-day").value = String(newPerDay());
+  $("setting-shuffle-choices").checked = SRS.getSetting("shuffleChoices", true);
   const subBox = $("setting-subjects");
   subBox.innerHTML = "";
   const enabled = enabledSubjects();
@@ -759,6 +761,10 @@ function renderStats() {
 
 $("setting-new-per-day").addEventListener("change", e => {
   SRS.setSetting("newPerDay", Number(e.target.value));
+});
+
+$("setting-shuffle-choices").addEventListener("change", e => {
+  SRS.setSetting("shuffleChoices", e.target.checked);
 });
 
 $("btn-export").addEventListener("click", async () => {
