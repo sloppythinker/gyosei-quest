@@ -31,6 +31,7 @@ function showScreen(id) {
   if (id === "screen-home") renderHome();
   if (id === "screen-stats") renderStats();
   if (id === "screen-cards") renderCards();
+  if (id === "screen-books") renderBooks();
 }
 
 document.querySelectorAll(".tab").forEach(t =>
@@ -623,6 +624,40 @@ function renderCards() {
     cardIdx = (cardIdx + 1) % deck.length;
     renderCards();
   });
+}
+
+/* ---------- 参考書 ---------- */
+function renderBooks() {
+  const box = $("books-container");
+  const books = window.BOOKS || [];
+  const cats = [];
+  for (const b of books) if (!cats.includes(b.category)) cats.push(b.category);
+  let html = `
+    <div class="card books-note">
+      合格者の合格体験記での使用実績とネットレビュー評価(2026年7月調査)をもとにしたおすすめ順です。
+      参考書ごとの公式な「合格率」統計は存在しないため、合格実績ベースの目安としてご覧ください。
+    </div>`;
+  for (const cat of cats) {
+    html += `<div class="books-cat">${escapeHtml(cat)}</div>`;
+    const list = books.filter(b => b.category === cat).sort((a, b) => a.rank - b.rank);
+    for (const b of list) {
+      const url = "https://www.amazon.co.jp/s?k=" + encodeURIComponent(b.search || b.title);
+      html += `
+        <div class="card book-card">
+          <div class="book-head">
+            <span class="rank-badge r${b.rank}">${b.rank}位</span>
+            <div>
+              <div class="book-title">${escapeHtml(b.title)}</div>
+              <div class="book-pub">${escapeHtml(b.publisher)}</div>
+            </div>
+          </div>
+          <div class="book-evidence">📈 ${escapeHtml(b.evidence)}</div>
+          <div class="book-comment">${escapeHtml(b.comment)}</div>
+          <a class="big-btn book-link" href="${url}" target="_blank" rel="noopener">Amazonで見る</a>
+        </div>`;
+    }
+  }
+  box.innerHTML = html;
 }
 
 /* ---------- 統計・設定 ---------- */

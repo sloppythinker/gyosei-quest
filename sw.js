@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE = "gyosei-quest-v4";
+const CACHE = "gyosei-quest-v5";
 const ASSETS = [
   "./",
   "./index.html",
@@ -21,6 +21,7 @@ const ASSETS = [
   "./data/kijutsu.js",
   "./data/tashi.js",
   "./data/suji.js",
+  "./data/books.js",
 ];
 
 self.addEventListener("install", e => {

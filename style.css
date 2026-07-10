@@ -209,6 +209,30 @@ body {
 .kijutsu-nav .big-btn { margin-bottom: 0; }
 .empty-note { text-align: center; color: var(--sub); padding: 40px 20px; font-size: 14px; }
 
+/* 参考書 */
+.books-note { font-size: 12px; color: var(--sub); }
+.books-cat { font-weight: 800; font-size: 15px; color: var(--primary); margin: 18px 2px 8px; }
+.book-card { padding: 14px 16px; }
+.book-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.rank-badge {
+  flex-shrink: 0; min-width: 42px; text-align: center;
+  padding: 4px 0; border-radius: 10px;
+  font-size: 13px; font-weight: 800;
+  background: var(--primary-light); color: var(--sub);
+}
+.rank-badge.r1 { background: #f5b301; color: #fff; }
+.rank-badge.r2 { background: #9aa4b5; color: #fff; }
+.rank-badge.r3 { background: #c98a5a; color: #fff; }
+.book-title { font-weight: 700; font-size: 15px; }
+.book-pub { font-size: 12px; color: var(--sub); }
+.book-evidence {
+  font-size: 12px; color: var(--sub);
+  background: var(--primary-light); border-radius: 8px;
+  padding: 6px 10px; margin-bottom: 8px;
+}
+.book-comment { font-size: 13px; margin-bottom: 10px; }
+.book-link { text-align: center; text-decoration: none; margin-bottom: 0; padding: 12px; font-size: 14px; }
+
 /* 統計 */
 .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
 .stat-name { width: 5.5em; font-weight: 600; }
