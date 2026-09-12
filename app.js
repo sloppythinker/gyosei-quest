@@ -22,6 +22,18 @@ const KIJUTSU_BY_ID = Object.fromEntries(KIJUTSU_CARDS.map(c => [c.id, c]));
 
 const $ = id => document.getElementById(id);
 
+function showQuestionMetadata(question) {
+  let element = $("question-metadata");
+  if (!element) {
+    element = document.createElement("p");
+    element.id = "question-metadata";
+    element.className = "muted";
+    $("question-text").after(element);
+  }
+  const metadata = QuestionMetadata.describe(question);
+  element.textContent = `出典: ${metadata.source} ／ 内容確認日: ${metadata.checkedAt} ／ 問題版: ${metadata.version}`;
+}
+
 /* ---------- 画面切替 ---------- */
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -296,6 +308,7 @@ function renderQuestion() {
     return;
   }
   $("question-text").textContent = q.question;
+  showQuestionMetadata(q);
 
   const isMockKind = session.kind === "mock" || session.kind === "fullmock";
   const area = $("answer-area");
@@ -434,6 +447,7 @@ function renderTashi(q) {
 /* ---------- 記述式入力演習 ---------- */
 function renderKijutsu(q) {
   $("question-text").textContent = q.question;
+  showQuestionMetadata(q);
   const area = $("answer-area");
   area.innerHTML = "";
 
