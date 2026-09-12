@@ -141,9 +141,26 @@ const SRS = (() => {
   function importData(json) {
     try {
       const s = JSON.parse(json);
-      if (!s || typeof s.q !== "object" || typeof s.days !== "object") return false;
-      store = { q: s.q, days: s.days, settings: s.settings || {}, mocks: s.mocks || [], marks: s.marks || {} };
-      save();
+      const isRecord = value => value !== null && typeof value === "object" && !Array.isArray(value);
+      const isCount = value => Number.isSafeInteger(value) && value >= 0;
+      const isDate = value => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+      if (!isRecord(s) || !isRecord(s.q) || !isRecord(s.days)) return false;
+      if (Object.values(s.q).some(q => !isRecord(q) || !Number.isInteger(q.lvl) ||
+          q.lvl < -1 || q.lvl >= INTERVALS.length || !isCount(q.c) || !isCount(q.w) ||
+          !isDate(q.due) || (q.last !== undefined && !isDate(q.last)))) return false;
+      if (Object.entries(s.days).some(([date, count]) => !isDate(date) || !isCount(count))) return false;
+      if (s.settings !== undefined && !isRecord(s.settings)) return false;
+      if (s.marks !== undefined && !isRecord(s.marks)) return false;
+      if (s.mocks !== undefined && (!Array.isArray(s.mocks) || s.mocks.some(m =>
+          !isRecord(m) || !isDate(m.d) || !isCount(m.s) || !isCount(m.t) || m.s > m.t))) return false;
+      const settings = s.settings || {};
+      if (settings.subjects !== undefined && (!Array.isArray(settings.subjects) || settings.subjects.some(v => typeof v !== "string"))) return false;
+      if (settings.newPerDay !== undefined && !isCount(settings.newPerDay)) return false;
+      const next = { q: s.q, days: s.days, settings, mocks: s.mocks || [], marks: s.marks || {} };
+      // 永続化に成功するまでは現在の学習記録を置き換えない。
+      localStorage.setItem(KEY, JSON.stringify(next));
+      store = next;
       return true;
     } catch {
       return false;
